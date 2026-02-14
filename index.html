@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Our Ultimate Adventure ❤️</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root { --rojo: #ff0000; --rosa: #ff85a1; --rosa-oscuro: #ff4d6d; --sombra: #800000; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: white; font-family: 'Press Start 2P', cursive; overflow: hidden; }
+        .screen { display: none; flex-direction: column; justify-content: center; align-items: center; width: 100vw; height: 100vh; position: absolute; text-align: center; background: radial-gradient(circle, #300 0%, #000 100%); }
+        .active { display: flex; }
+        h1 { font-size: 2.5rem; color: var(--rojo); text-shadow: 4px 4px 0px var(--sombra); margin-bottom: 20px; }
+        .btn-arcade { background: var(--rojo); border: 4px solid white; color: white; padding: 15px; font-family: 'Press Start 2P'; cursor: pointer; box-shadow: 6px 6px 0px var(--sombra); margin: 8px; font-size: 0.8rem; z-index: 1000; width: 80%; max-width: 400px; }
+        .btn-arcade:active { transform: translate(3px, 3px); box-shadow: 0px 0px 0px; }
+        .question-box { border: 6px double var(--rosa); padding: 20px; background: rgba(0,0,0,0.9); width: 90%; max-width: 600px; }
+        #catch-game { position: relative; width: 350px; height: 350px; background: #111; border: 4px solid var(--rosa); overflow: hidden; display: none; margin-top: 10px; }
+        .falling-heart { position: absolute; font-size: 25px; cursor: crosshair; }
+        #maze-container { position: relative; width: 400px; height: 400px; background: #050505; border: 4px solid var(--rosa-oscuro); display: none; }
+        .wall { position: absolute; background: transparent; border: 1px solid rgba(255,255,255,0.05); } 
+        #player { position: absolute; width: 18px; height: 18px; background: var(--rojo); z-index: 10; display: flex; justify-content: center; align-items: center; font-size: 12px; border-radius: 2px; }
+        #letter-text { width: 85%; max-width: 650px; line-height: 1.8; font-size: 0.8rem; text-align: left; border: 4px solid var(--rosa); padding: 25px; background: rgba(10, 10, 10, 0.95); overflow-y: scroll; height: 60vh; scroll-behavior: smooth; }
+        #letter-text::-webkit-scrollbar { width: 10px; }
+        #letter-text::-webkit-scrollbar-track { background: #000; }
+        #letter-text::-webkit-scrollbar-thumb { background: var(--rosa); border: 2px solid white; }
+    </style>
+</head>
+<body>
+
+    <audio id="snd-fondo" loop src="fondo.mp3"></audio>
+    <audio id="snd-error" src="error.mp3"></audio>
+    <audio id="snd-acierto" src="acierto.mp3"></audio>
+    <audio id="snd-ganaste" src="ganaste.mp3"></audio>
+
+    <div id="sc-start" class="screen active">
+        <h1>VALENTINE<br>ADVENTURE</h1>
+        <p style="color:var(--rosa); margin-bottom: 30px; font-size: 0.6rem;">¿LISTO PARA TU REGALO?</p>
+        <button class="btn-arcade" onclick="iniciarJuego()">INICIAR</button>
+    </div>
+
+    <div id="sc-game" class="screen">
+        <h2 id="lvl-tag" style="color: var(--rosa); margin-bottom: 15px; font-size: 0.8rem;">NIVEL 1</h2>
+        <div id="trivia-cont" class="question-box">
+            <p id="q-text" style="margin-bottom: 20px; font-size: 0.7rem;"></p>
+            <div id="options" style="display: flex; flex-direction: column; align-items: center;"></div>
+            <p id="feedback" style="margin-top:15px; font-size:0.6rem; color:var(--rosa-oscuro); height: 20px;"></p>
+        </div>
+        <div id="catch-game"></div>
+        <div id="maze-container"><div id="player">❤️</div></div>
+    </div>
+
+    <div id="sc-final" class="screen">
+        <h2 id="win-msg" style="color: var(--rojo); margin-bottom: 20px; font-size: 1rem;"></h2>
+        <div id="letter-text"></div>
+        <p style="margin-top:20px; font-size: 0.6rem; color: var(--rosa);">NUESTRO AMOR ES MÁS FUERTE QUE LA DISTANCIA</p>
+    </div>
+
+    <script>
+        window.iniciarJuego = function() {
+            document.getElementById('snd-fondo').volume = 0.3;
+            document.getElementById('snd-fondo').play();
+            showSc('sc-game');
+            loadQ();
+        };
+
+        const questions = [
+            { q: "1. ¿Cuál es mi comida preferida?", a: "Pizza", b: "Hamburguesas", c: "Pastas", cor: 'a' },
+            { q: "2. ¿Cuánto me quieres?", a: "Mucho", b: "Días sin bañar", c: "Infinito", cor: 'b' },
+            { q: "3. ¿Qué es lo más difícil de estar lejos?", a: "No poder abrazarte", b: "El internet lento", c: "No verte comer", cor: 'a' },
+            { q: "4. ¿Qué haremos al vernos?", a: "Llorar", b: "Abrazarnos 10 horas", c: "Ir por comida", cor: 'b' },
+            { q: "5. ¿Qué es lo que más me gusta de ti?", a: "Mi bestie", b: "Tu brazo", c: "Tu carita", cor: 'a' },
+            { q: "6. ¿Relaciones desenfrenadas?", a: "Si", b: "Obvio", c: "Siiiii", cor: 'b' },
+            { q: "7. ¿Quién es el más berrinchudo?", a: "Tú", b: "Yo", c: "Ambos", cor: 'b' },
+            { q: "8. ¿Qué me recuerda a ti?", a: "Tu perfume", b: "Tu voz", c: "Todo", cor: 'c' },
+            { q: "9. Si fueras un animal, ¿cuál serías?", a: "Perrito", b: "Gatito mimoso", c: "León", cor: 'b' },
+            { q: "10. ¿Cuál es mi color favorito?", a: "Rosa", b: "Rojo", c: "Negro", cor: 'a' },
+            { q: "11. ¿A donde iriamos en nuestra primer cita?", a: "Comer/Maquillaje", b: "Amorsh", c: "Todas las anteriores", cor: 'c' },
+            { q: "12. ¿Qué es lo que más me gusta que te diga?", a: "Te extraño", b: "Eres mío", c: "Te quiero", cor: 'b' },
+            { q: "13. ¿Cuál es mi postre favorito?", a: "Fresas con crema", b: "Pastel", c: "Helado", cor: 'a' },
+            { q: "14. ¿Qué parte de mi cuerpo te gusta más?", a: "Ojos", b: "Labios", c: "Todo", cor: 'c' },
+            { q: "15. ¿Quién mandó el primer mensaje?", a: "Tú", b: "Yo", c: "No sé", cor: 'b' },
+            { q: "16. ¿Qué te hace pensar en mí siempre?", a: "Todo", b: "Ver fotos", c: "La música", cor: 'a' },
+            { q: "17. ¿Hijos? (Broma)", a: "2", b: "5", c: "Un equipo", cor: 'a' },
+            { q: "18. ¿Soy el amor de tu vida?", a: "Sí", b: "Por siempre", c: "Mil veces sí", cor: 'b' },
+            { q: "19. ¿Me vas a cuidar siempre?", a: "Lo prometo", b: "Si", c: "Claro", cor: 'a' },
+            { q: "20. ¿Quieres ser mi San Valentín?", a: "SÍ", b: "YA LO SOY", c: "MIL VECES SÍ", cor: 'a' }
+        ];
+
+        let cur = 0, keys = 0, px = 15, py = 15;
+
+        function showSc(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function loadQ() {
+            const d = questions[cur];
+            document.getElementById('lvl-tag').innerText = `DESAFÍO ${cur + 1} DE 20`;
+            document.getElementById('q-text').innerText = d.q;
+            document.getElementById('options').innerHTML = `
+                <button class="btn-arcade" onclick="check('a')">${d.a}</button>
+                <button class="btn-arcade" onclick="check('b')">${d.b}</button>
+                <button class="btn-arcade" onclick="check('c')">${d.c}</button>`;
+        }
+
+        function check(sel) {
+            if(sel === questions[cur].cor) {
+                document.getElementById('snd-acierto').play();
+                document.getElementById('feedback').innerText = "¡CORRECTO! ❤️";
+                setTimeout(() => { cur++; if(cur < questions.length) loadQ(); else startCatch(); }, 1200);
+            } else {
+                document.getElementById('snd-error').play();
+                document.getElementById('feedback').innerText = "ERROR... 💔";
+            }
+        }
+
+        function startCatch() {
+            document.getElementById('lvl-tag').innerText = "ATRAPA MIS BESOS (10)";
+            document.getElementById('trivia-cont').style.display = "none";
+            const board = document.getElementById('catch-game');
+            board.style.display = "block";
+            let caught = 0;
+            const int = setInterval(() => {
+                if(caught >= 10) { clearInterval(int); startMaze(); return; }
+                const h = document.createElement('div'); h.className = 'falling-heart'; h.innerText = "💋";
+                h.style.left = Math.random()*320+"px"; h.style.top = "-30px";
+                board.appendChild(h);
+                let t = 0;
+                const f = setInterval(() => { t += 6; h.style.top = t + "px"; if(t > 350){ clearInterval(f); h.remove(); }}, 30);
+                h.onclick = () => { document.getElementById('snd-acierto').play(); caught++; h.remove(); };
+            }, 700);
+        }
+
+        // Laberinto Ajustado (Sin llaves encerradas)
+        const walls = [
+            {t:0, l:60, w:10, h:280}, {t:340, l:60, w:280, h:10}, {t:60, l:200, w:10, h:200},
+            {t:150, l:200, w:80, h:10}, {t:40, l:300, w:10, h:250}
+        ];
+
+        function startMaze() {
+            document.getElementById('lvl-tag').innerText = "LABERINTO INVISIBLE";
+            document.getElementById('catch-game').style.display = "none";
+            const m = document.getElementById('maze-container'); m.style.display = "block";
+            walls.forEach(w => {
+                const d = document.createElement('div'); d.className = 'wall';
+                d.style.top = w.t+"px"; d.style.left = w.l+"px"; d.style.width = w.w+"px"; d.style.height = w.h+"px";
+                m.appendChild(d);
+            });
+            const keyPos = [{t:50,l:350}, {t:300,l:20}, {t:370,l:370}];
+            keyPos.forEach((p, idx) => {
+                const k = document.createElement('div'); k.innerText = "🔑"; k.className = "key";
+                k.style.position="absolute"; k.style.top = p.t+"px"; k.style.left = p.l+"px";
+                m.appendChild(k);
+            });
+        }
+
+        window.onkeydown = (e) => {
+            if(!document.getElementById('maze-container').offsetParent) return;
+            let nx = px, ny = py;
+            if(e.key === "ArrowUp") ny -= 10; if(e.key === "ArrowDown") ny += 10;
+            if(e.key === "ArrowLeft") nx -= 10; if(e.key === "ArrowRight") nx += 10;
+            if(nx<0 || nx>380 || ny<0 || ny>380) return;
+            const hit = walls.some(w => nx < w.l + w.w && nx + 18 > w.l && ny < w.t + w.h && ny + 18 > w.t);
+            if(hit) { document.getElementById('snd-error').play(); return; }
+            px = nx; py = ny;
+            document.getElementById('player').style.top = py+"px";
+            document.getElementById('player').style.left = px+"px";
+            document.querySelectorAll('.key').forEach(k => {
+                if(Math.abs(px-parseInt(k.style.left))<25 && Math.abs(py-parseInt(k.style.top))<25) {
+                    k.remove(); keys++; document.getElementById('snd-acierto').play();
+                    if(keys===3) { 
+                        const c = document.createElement('div'); c.innerText="🎁"; c.style.position="absolute";
+                        c.style.right="10px"; c.style.bottom="10px"; c.style.fontSize="30px";
+                        document.getElementById('maze-container').appendChild(c); 
+                    }
+                }
+            });
+            if(keys===3 && px > 360 && py > 360) finish();
+        };
+
+        function finish() {
+            document.querySelectorAll('audio').forEach(a => { a.pause(); a.currentTime = 0; });
+            showSc('sc-final');
+            setTimeout(() => { document.getElementById('snd-ganaste').play(); }, 200);
+            document.getElementById('win-msg').innerText = "¡FELIZ SAN VALENTÍN! ❤️";
+            
+            const txt = "Quería aprovechar este día para recordarte lo mucho que significas para mí. Cada momento contigo se siente especial, y tu ser hace que cualquier día gris se llene de amor y alegría. Gracias por ser mi compañero, mi apoyo y mi alegría constante.\n\nMe encanta todo de ti: Tus detalles, tu atención, tus palabras, tu cuerpo, tu alma y tu mente; incluso esas pequeñas cosas que me hacen reír. No importa cuánto tiempo pase, siempre me emociona pensar en todo lo que vivimos y en todo lo que viviremos en un futuro.\n\nHoy solo quiero decirte que te amo, que te aprecio más de lo que las palabras pueden alcanzar. Me siento muy afortunada de haber conocido a una persona tan increíble. Gracias por ser tú, simplemente.\n\nA veces me quedo pensando en cómo la vida nos puso en el mismo camino a pesar de los kilómetros. Es loco pensar que, aunque no pueda tocar tu mano ahora mismo, te siento más cerca que a cualquier otra persona. Eres el pensamiento que me hace sonreír cuando tengo un día pesado y la voz que me da paz antes de dormir.\n\nSé que la distancia no es fácil, que a veces el deseo de un abrazo se siente como un peso en el pecho, pero cada segundo de espera vale la pena porque sé que el premio eres tú. No hay distancia que pueda enfriar lo que siento, porque tú estás grabado en cada rincón de mi corazón. Me imagino ese primer segundo en que te vea, ese momento en que la pantalla desaparezca y por fin seas real frente a mis ojos. Ese día, el mundo se va a detener.\n\nGracias por tenerme paciencia, por hacerme sentir tan tuya a pesar de no estar ahí físicamente, por tus bromas que me alegran la existencia y por ese brazo que tanto me gusta. Eres mi 'bestie', mi confidente y el hombre de mis sueños. No quiero a nadie más, no busco a nadie más; te elegí a ti y te elegiría mil veces más en mil vidas distintas.\n\nPrometo estar siempre para ti, ser tu refugio cuando lo necesites y celebrar cada uno de tus logros como si fueran míos. Eres un hombre increíble, con un corazón que vale oro, y nunca voy a cansarme de recordártelo. Por muchos kilómetros más que pronto se convertirán en cero.\n\nY es que no hay nada que se compare a la sensación de saber que estás ahí, que me escuchas, que me entiendes y que, a pesar de todo, decides quedarte. Me encanta cómo planeamos el futuro, cómo imaginamos nuestra vida juntos y cómo, poco a poco, vamos construyendo este sueño que es nuestro. No importa qué tan difícil se ponga el camino, si es contigo, sé que podemos superarlo todo.\n\nTe amo con todo lo que soy, hoy, mañana y para siempre. Eres mi San Valentín eterno.";
+            
+            let i = 0; const box = document.getElementById('letter-text');
+            function type() { 
+                if(i < txt.length) { 
+                    box.innerHTML += txt.charAt(i) === "\n" ? "<br>" : txt.charAt(i); 
+                    i++; 
+                    setTimeout(type, 35); 
+                    box.scrollTop = box.scrollHeight;
+                } 
+            }
+            type();
+        }
+    </script>
+</body>
+</html> 
